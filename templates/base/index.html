@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Image Generation Assignment</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        #input-container {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #prompts {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        #image-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+            width: 100%;
+            max-width: 600px;
+        }
+        .image-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .image-wrapper img {
+            max-width: 100%;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            padding: 5px;
+        }
+        .prompt {
+            margin-top: 5px;
+            font-style: italic;
+        }
+    </style>
+    <script>
+        const socket = new WebSocket('ws://' + window.location.host + '/ws/image_generation/');
+
+        socket.onopen = function() {
+            console.log('WebSocket connection established');
+        };
+
+        socket.onerror = function(error) {
+            console.error('WebSocket error:', error);
+        };
+
+        socket.onmessage = function(e) {
+            console.log('WebSocket message received:', e.data);
+            const data = JSON.parse(e.data);
+            const imageContainer = document.getElementById('image-container');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'image-wrapper';
+            const img = document.createElement('img');
+            img.src = data.message.url;
+            img.alt = data.message.prompt;
+            const promptText = document.createElement('div');
+            promptText.className = 'prompt';
+            promptText.textContent = data.message.prompt;
+            wrapper.appendChild(img);
+            wrapper.appendChild(promptText);
+            imageContainer.appendChild(wrapper);
+        };
+
+        function generateImages() {
+            const promptsInput = document.getElementById('prompts');
+            const prompts = promptsInput.value.split(',').map(prompt => prompt.trim());
+
+            fetch('/generate/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({prompts: prompts}),
+            })
+            .then(response => response.json())
+            .then(data => console.log('Fetch response:', data))
+            .catch(error => console.error('Fetch error:', error));
+        }
+    </script>
+</head>
+<body>
+    <h1>Image Generation</h1>
+    <div id="input-container">
+        <input type="text" id="prompts" placeholder="Enter prompts, separated by commas">
+        <button onclick="generateImages()">Generate Images</button>
+    </div>
+    <div id="image-container"></div>
+</body>
+</html>
